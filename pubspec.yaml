@@ -5,13 +5,23 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.2
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  tflite_flutter: ^0.10.4
+
+  # Try these in order of preference:
+  # Option 1: Latest version
+  tflite_flutter: ^0.11.0
+
+  # Option 2: If above fails, try stable version
+  # tflite_flutter: ^0.10.1
+
+  # Option 3: Alternative package (if official doesn't work)
+  # tflite_flutter_helper: ^0.3.1
+
   image: ^4.0.17
   camera: ^0.10.5+5
   path_provider: ^2.1.1
@@ -23,12 +33,12 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+# Add this if you still have issues:
+dependency_overrides:
+  # Force compatible version of typed_data
+  typed_data: ^1.3.0
+
 flutter:
   uses-material-design: true
-
   assets:
     - assets/models/
-    - assets/models/MobileFaceNet.tflite
-    - assets/models/pnet.tflite
-    - assets/models/rnet.tflite
-    - assets/models/onet.tflite
