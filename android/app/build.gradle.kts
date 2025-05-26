@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -9,10 +8,13 @@ android {
     namespace = "com.example.in_app_face_recognition"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
+
+    // TensorFlow Lite configuration
     aaptOptions {
         noCompress("tflite")
         noCompress("lite")
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

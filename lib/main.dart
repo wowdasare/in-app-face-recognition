@@ -1,8 +1,19 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-import 'widgets/face_recognition_widget.dart';
+import 'screens/face_recognition_screen.dart';
 
-void main() {
+List<CameraDescription> cameras = [];
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    cameras = await availableCameras();
+  } catch (e) {
+    print('Error initializing cameras: $e');
+  }
+
   runApp(MyApp());
 }
 
@@ -13,8 +24,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Face Recognition App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: FaceRecognitionWidget(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: FaceRecognitionScreen(cameras: cameras),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
