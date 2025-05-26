@@ -24,7 +24,7 @@ dependencies:
   path: ^1.9.1
   crypto: ^3.0.3
   # TensorFlow Lite for real face recognition (compatible versions)
-  tflite_flutter: ^0.9.0
+  tflite_flutter: ^0.11.0
 
 dev_dependencies:
   flutter_test:
