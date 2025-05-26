@@ -20,8 +20,7 @@ class FaceRecognitionScreen extends StatefulWidget {
 
 class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     with TickerProviderStateMixin {
-  final FaceRecognitionService _faceRecognitionService =
-      FaceRecognitionService();
+  final FaceRecognitionService _faceRecognitionService = FaceRecognitionService();
   final ImagePicker _imagePicker = ImagePicker();
 
   CameraController? _cameraController;
@@ -80,18 +79,16 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       setState(() {
         _modelStatus = _faceRecognitionService.modelStatus;
-        _statusMessage =
-            modelLoaded
-                ? 'Model loaded successfully! Ready for face recognition.'
-                : 'Model loading failed - using fallback mode.';
+        _statusMessage = modelLoaded
+            ? 'Model loaded successfully! Ready for face recognition.'
+            : 'Model loading failed - using fallback mode.';
       });
 
       if (widget.cameras.isNotEmpty) {
         await _initializeCamera();
       } else {
         setState(() {
-          _statusMessage =
-              'Model ready! No camera available - use gallery to select images.';
+          _statusMessage = 'Model ready! No camera available - use gallery to select images.';
         });
       }
     } catch (e) {
@@ -133,8 +130,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     } catch (e) {
       print('Error initializing camera: $e');
       setState(() {
-        _statusMessage =
-            'Camera initialization failed. Using gallery mode only.';
+        _statusMessage = 'Camera initialization failed. Using gallery mode only.';
       });
     }
   }
@@ -198,15 +194,10 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       });
 
       Uint8List imageBytes = await imageFile.readAsBytes();
-      List<double>? embedding = await _faceRecognitionService.getFaceEmbedding(
-        imageBytes,
-      );
+      List<double>? embedding = await _faceRecognitionService.getFaceEmbedding(imageBytes);
 
       if (embedding == null) {
-        _showSnackBar(
-          'Failed to process face in image. Please try another image.',
-          Colors.red,
-        );
+        _showSnackBar('Failed to process face in image. Please try another image.', Colors.red);
         setState(() {
           _isProcessing = false;
           _statusMessage = 'Face processing failed. Try another image.';
@@ -224,8 +215,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         }
         _comparisonResult = null;
         _isProcessing = false;
-        _statusMessage =
-            'Image processed successfully! ${_image1 != null && _image2 != null ? 'Ready to compare faces.' : 'Add another image to compare.'}';
+        _statusMessage = 'Image processed successfully! ${_image1 != null && _image2 != null ? 'Ready to compare faces.' : 'Add another image to compare.'}';
       });
 
       if (_embedding1 != null && _embedding2 != null) {
@@ -258,10 +248,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     try {
       await Future.delayed(const Duration(milliseconds: 800));
 
-      final result = _faceRecognitionService.verifyFaces(
-        _embedding1!,
-        _embedding2!,
-      );
+      final result = _faceRecognitionService.verifyFaces(_embedding1!, _embedding2!);
 
       setState(() {
         _comparisonResult = result;
@@ -270,10 +257,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         final bool isMatch = result['match'] as bool;
         final double confidence = result['confidence'] as double;
 
-        _statusMessage =
-            isMatch
-                ? 'Face match found! Confidence: ${(confidence * 100).toStringAsFixed(1)}%'
-                : 'No face match. Similarity: ${(result['similarity'] as double).toStringAsFixed(1)}%';
+        _statusMessage = isMatch
+            ? 'Face match found! Confidence: ${(confidence * 100).toStringAsFixed(1)}%'
+            : 'No face match. Similarity: ${(result['similarity'] as double).toStringAsFixed(1)}%';
       });
 
       _resultController.forward();
@@ -313,10 +299,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
   void _showSnackBar(String message, Color backgroundColor) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.w500)),
         backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
@@ -331,10 +314,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text(
-          'Face Recognition System',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Face Recognition System', style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.indigo.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -386,11 +366,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                       ),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.face,
-                      color: Colors.white,
-                      size: 30,
-                    ),
+                    child: const Icon(Icons.face, color: Colors.white, size: 30),
                   ),
                 );
               },
@@ -408,22 +384,23 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             Text(
               _statusMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color:
-                    _modelStatus == 'Loaded - Advanced Demo Mode'
-                        ? Colors.green.shade100
-                        : Colors.orange.shade100,
+                color: _modelStatus == 'Loaded - Advanced Demo Mode'
+                    ? Colors.green.shade100
+                    : Colors.orange.shade100,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                      _modelStatus == 'Loaded - Advanced Demo Mode'
-                          ? Colors.green.shade300
-                          : Colors.orange.shade300,
+                  color: _modelStatus == 'Loaded - Advanced Demo Mode'
+                      ? Colors.green.shade300
+                      : Colors.orange.shade300,
                 ),
               ),
               child: Text(
@@ -431,10 +408,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color:
-                      _modelStatus == 'Loaded - Advanced Demo Mode'
-                          ? Colors.green.shade700
-                          : Colors.orange.shade700,
+                  color: _modelStatus == 'Loaded - Advanced Demo Mode'
+                      ? Colors.green.shade700
+                      : Colors.orange.shade700,
                 ),
               ),
             ),
@@ -577,10 +553,9 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        double scale =
-            hasImage && isProcessed
-                ? 1.0 + (_pulseController.value * 0.05)
-                : 1.0;
+        double scale = hasImage && isProcessed
+            ? 1.0 + (_pulseController.value * 0.05)
+            : 1.0;
 
         return Transform.scale(
           scale: scale,
@@ -589,22 +564,16 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color:
-                    hasImage
-                        ? (isProcessed
-                            ? Colors.green.shade300
-                            : Colors.blue.shade300)
-                        : Colors.grey.shade300,
+                color: hasImage
+                    ? (isProcessed ? Colors.green.shade300 : Colors.blue.shade300)
+                    : Colors.grey.shade300,
                 width: 2,
               ),
               color: hasImage ? null : Colors.grey.shade50,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child:
-                  hasImage
-                      ? _buildImageContent(slot, image, isProcessed)
-                      : _buildEmptySlot(slot),
+              child: hasImage ? _buildImageContent(slot, image, isProcessed) : _buildEmptySlot(slot),
             ),
           ),
         );
@@ -736,15 +705,17 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade600,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildCompareButton() {
-    bool canCompare =
-        _embedding1 != null && _embedding2 != null && !_isProcessing;
+    bool canCompare = _embedding1 != null && _embedding2 != null && !_isProcessing;
 
     return SizedBox(
       width: double.infinity,
@@ -759,9 +730,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.indigo.shade600,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: canCompare ? 2 : 0,
         ),
       ),

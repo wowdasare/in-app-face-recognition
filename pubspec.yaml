@@ -23,6 +23,8 @@ dependencies:
   # Additional utilities
   path: ^1.9.1
   crypto: ^3.0.3
+  # TensorFlow Lite for real face recognition (compatible versions)
+  tflite_flutter: ^0.9.0
 
 dev_dependencies:
   flutter_test:
@@ -34,3 +36,8 @@ flutter:
 
   assets:
     - assets/models/
+    - assets/models/FaceAntiSpoofing.tflite
+    - assets/models/MobileFaceNet.tflite
+    - assets/models/onet.tflite
+    - assets/models/pnet.tflite
+    - assets/models/rnet.tflite
