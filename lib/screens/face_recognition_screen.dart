@@ -1,3 +1,4 @@
+// lib/screens/face_recognition_screen.dart
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../services/face_recognition_service.dart';
 import '../widgets/comparison_widget.dart';
+import '../widgets/model_debug_widget.dart';
 
 class FaceRecognitionScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -20,7 +22,8 @@ class FaceRecognitionScreen extends StatefulWidget {
 
 class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     with TickerProviderStateMixin {
-  final FaceRecognitionService _faceRecognitionService = FaceRecognitionService();
+  final FaceRecognitionService _faceRecognitionService =
+      FaceRecognitionService();
   final ImagePicker _imagePicker = ImagePicker();
 
   CameraController? _cameraController;
@@ -39,6 +42,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
   late AnimationController _loadingController;
   late AnimationController _resultController;
   late AnimationController _pulseController;
+  late AnimationController _fadeController;
 
   String _statusMessage = 'Initializing...';
   String _modelStatus = 'Loading';
@@ -65,33 +69,45 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
   }
 
   Future<void> _initializeServices() async {
     setState(() {
       _isInitializing = true;
-      _statusMessage = 'Loading face recognition model...';
+      _statusMessage = 'Loading AI models for face recognition...';
       _modelStatus = 'Loading';
     });
 
     try {
+      // Load face recognition models
       bool modelLoaded = await _faceRecognitionService.loadModel();
 
       setState(() {
         _modelStatus = _faceRecognitionService.modelStatus;
-        _statusMessage = modelLoaded
-            ? 'Model loaded successfully! Ready for face recognition.'
-            : 'Model loading failed - using fallback mode.';
+        _statusMessage =
+            modelLoaded
+                ? 'AI models loaded successfully! Ready for face recognition.'
+                : 'Model loading failed - using fallback mode.';
       });
 
+      // Initialize camera if available
       if (widget.cameras.isNotEmpty) {
         await _initializeCamera();
       } else {
         setState(() {
-          _statusMessage = 'Model ready! No camera available - use gallery to select images.';
+          _statusMessage =
+              'AI ready! No camera available - use gallery to select images.';
         });
       }
+
+      _fadeController.forward();
     } catch (e) {
+      print('Error initializing services: $e');
       setState(() {
         _statusMessage = 'Initialization error: ${e.toString()}';
         _modelStatus = 'Error';
@@ -124,13 +140,14 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       if (mounted) {
         setState(() {
           _isCameraInitialized = true;
-          _statusMessage = 'Ready! Camera and model loaded successfully.';
+          _statusMessage = 'Ready! Camera and AI models loaded successfully.';
         });
       }
     } catch (e) {
       print('Error initializing camera: $e');
       setState(() {
-        _statusMessage = 'Camera initialization failed. Using gallery mode only.';
+        _statusMessage =
+            'Camera initialization failed. Using gallery mode only.';
       });
     }
   }
@@ -154,6 +171,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     } catch (e) {
       print('Error capturing image: $e');
       _showSnackBar('Failed to capture image: ${e.toString()}', Colors.red);
+      setState(() => _isProcessing = false);
     }
   }
 
@@ -163,6 +181,21 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         _isProcessing = true;
         _statusMessage = 'Opening gallery...';
       });
+
+      // Check permissions
+      bool hasPermission = await _requestGalleryPermission();
+      if (!hasPermission) {
+        setState(() {
+          _statusMessage =
+              'Gallery permission denied. Please grant permission in settings.';
+          _isProcessing = false;
+        });
+        _showSnackBar(
+          'Permission denied. Please grant gallery access.',
+          Colors.red,
+        );
+        return;
+      }
 
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
@@ -187,20 +220,67 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     }
   }
 
+  Future<bool> _requestGalleryPermission() async {
+    try {
+      if (Platform.isAndroid) {
+        // Try modern permissions first (Android 13+)
+        PermissionStatus photosStatus = await Permission.photos.status;
+        if (photosStatus.isGranted) return true;
+
+        if (photosStatus.isDenied) {
+          photosStatus = await Permission.photos.request();
+          if (photosStatus.isGranted) return true;
+        }
+
+        // Fall back to storage permission (older Android)
+        PermissionStatus storageStatus = await Permission.storage.status;
+        if (storageStatus.isGranted) return true;
+
+        if (storageStatus.isDenied) {
+          storageStatus = await Permission.storage.request();
+          return storageStatus.isGranted;
+        }
+
+        return false;
+      } else if (Platform.isIOS) {
+        PermissionStatus status = await Permission.photos.status;
+        if (status.isGranted) return true;
+
+        if (status.isDenied) {
+          status = await Permission.photos.request();
+          return status.isGranted;
+        }
+
+        return false;
+      }
+
+      return true; // For other platforms
+    } catch (e) {
+      print('Error requesting gallery permission: $e');
+      return false;
+    }
+  }
+
   Future<void> _processImage(File imageFile, int imageSlot) async {
     try {
       setState(() {
-        _statusMessage = 'Processing image for face recognition...';
+        _statusMessage = 'Processing image with AI...';
       });
 
       Uint8List imageBytes = await imageFile.readAsBytes();
-      List<double>? embedding = await _faceRecognitionService.getFaceEmbedding(imageBytes);
+      List<double>? embedding = await _faceRecognitionService.getFaceEmbedding(
+        imageBytes,
+      );
 
       if (embedding == null) {
-        _showSnackBar('Failed to process face in image. Please try another image.', Colors.red);
+        _showSnackBar(
+          'No face detected in image. Please try another image with a clear face.',
+          Colors.red,
+        );
         setState(() {
           _isProcessing = false;
-          _statusMessage = 'Face processing failed. Try another image.';
+          _statusMessage =
+              'Face detection failed. Try another image with a clear face.';
         });
         return;
       }
@@ -215,7 +295,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         }
         _comparisonResult = null;
         _isProcessing = false;
-        _statusMessage = 'Image processed successfully! ${_image1 != null && _image2 != null ? 'Ready to compare faces.' : 'Add another image to compare.'}';
+        _statusMessage =
+            'Face processed successfully! ${_image1 != null && _image2 != null ? 'Ready to compare faces.' : 'Add another image to compare.'}';
       });
 
       if (_embedding1 != null && _embedding2 != null) {
@@ -242,13 +323,16 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
     setState(() {
       _isProcessing = true;
-      _statusMessage = 'Comparing faces...';
+      _statusMessage = 'Comparing faces with AI...';
     });
 
     try {
       await Future.delayed(const Duration(milliseconds: 800));
 
-      final result = _faceRecognitionService.verifyFaces(_embedding1!, _embedding2!);
+      final result = _faceRecognitionService.verifyFaces(
+        _embedding1!,
+        _embedding2!,
+      );
 
       setState(() {
         _comparisonResult = result;
@@ -256,10 +340,12 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
         final bool isMatch = result['match'] as bool;
         final double confidence = result['confidence'] as double;
+        final double similarity = result['similarity'] as double;
 
-        _statusMessage = isMatch
-            ? 'Face match found! Confidence: ${(confidence * 100).toStringAsFixed(1)}%'
-            : 'No face match. Similarity: ${(result['similarity'] as double).toStringAsFixed(1)}%';
+        _statusMessage =
+            isMatch
+                ? 'Face match found! Confidence: ${(confidence * 100).toStringAsFixed(1)}%'
+                : 'No face match. Similarity: ${(similarity * 100).toStringAsFixed(1)}%';
       });
 
       _resultController.forward();
@@ -299,7 +385,10 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
   void _showSnackBar(String message, Color backgroundColor) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.w500)),
+        content: Text(
+          message,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
         backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
@@ -314,11 +403,27 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Face Recognition System', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text(
+          'AI Face Recognition',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.indigo.shade600,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          // Debug button
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ModelDebugWidget(),
+                ),
+              );
+            },
+            tooltip: 'Model Debug Tool',
+          ),
           if (_image1 != null || _image2 != null)
             IconButton(
               icon: const Icon(Icons.clear_all_rounded),
@@ -366,14 +471,18 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                       ),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.face, color: Colors.white, size: 30),
+                    child: const Icon(
+                      Icons.face,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                 );
               },
             ),
             const SizedBox(height: 24),
             Text(
-              'Face Recognition System',
+              'AI Face Recognition',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -384,33 +493,36 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             Text(
               _statusMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _modelStatus == 'Loaded - Advanced Demo Mode'
-                    ? Colors.green.shade100
-                    : Colors.orange.shade100,
+                color:
+                    _modelStatus.contains('successfully') ||
+                            _modelStatus.contains('Loaded')
+                        ? Colors.green.shade100
+                        : Colors.orange.shade100,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _modelStatus == 'Loaded - Advanced Demo Mode'
-                      ? Colors.green.shade300
-                      : Colors.orange.shade300,
+                  color:
+                      _modelStatus.contains('successfully') ||
+                              _modelStatus.contains('Loaded')
+                          ? Colors.green.shade300
+                          : Colors.orange.shade300,
                 ),
               ),
               child: Text(
-                'Model Status: $_modelStatus',
+                'Status: $_modelStatus',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: _modelStatus == 'Loaded - Advanced Demo Mode'
-                      ? Colors.green.shade700
-                      : Colors.orange.shade700,
+                  color:
+                      _modelStatus.contains('successfully') ||
+                              _modelStatus.contains('Loaded')
+                          ? Colors.green.shade700
+                          : Colors.orange.shade700,
                 ),
               ),
             ),
@@ -421,28 +533,31 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
   }
 
   Widget _buildMainContent() {
-    return Column(
-      children: [
-        _buildStatusBar(),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildImageSelectionSection(),
-                const SizedBox(height: 24),
-                _buildCompareButton(),
-                const SizedBox(height: 24),
-                if (_comparisonResult != null)
-                  FadeTransition(
-                    opacity: _resultController,
-                    child: ComparisonResultWidget(result: _comparisonResult!),
-                  ),
-              ],
+    return FadeTransition(
+      opacity: _fadeController,
+      child: Column(
+        children: [
+          _buildStatusBar(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _buildImageSelectionSection(),
+                  const SizedBox(height: 24),
+                  _buildCompareButton(),
+                  const SizedBox(height: 24),
+                  if (_comparisonResult != null)
+                    FadeTransition(
+                      opacity: _resultController,
+                      child: ComparisonResultWidget(result: _comparisonResult!),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -466,7 +581,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              _isProcessing ? Icons.hourglass_top : Icons.check_circle,
+              _isProcessing ? Icons.psychology : Icons.check_circle,
               color: Colors.white,
               size: 20,
             ),
@@ -477,7 +592,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isProcessing ? 'Processing...' : 'Ready',
+                  _isProcessing ? 'AI Processing...' : 'Ready',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -525,13 +640,19 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Select Images to Compare',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
+          Row(
+            children: [
+              Icon(Icons.compare_arrows, color: Colors.indigo.shade600),
+              const SizedBox(width: 8),
+              Text(
+                'Select Images to Compare',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Row(
@@ -553,9 +674,10 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        double scale = hasImage && isProcessed
-            ? 1.0 + (_pulseController.value * 0.05)
-            : 1.0;
+        double scale =
+            hasImage && isProcessed
+                ? 1.0 + (_pulseController.value * 0.05)
+                : 1.0;
 
         return Transform.scale(
           scale: scale,
@@ -564,16 +686,22 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: hasImage
-                    ? (isProcessed ? Colors.green.shade300 : Colors.blue.shade300)
-                    : Colors.grey.shade300,
+                color:
+                    hasImage
+                        ? (isProcessed
+                            ? Colors.green.shade300
+                            : Colors.blue.shade300)
+                        : Colors.grey.shade300,
                 width: 2,
               ),
               color: hasImage ? null : Colors.grey.shade50,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: hasImage ? _buildImageContent(slot, image, isProcessed) : _buildEmptySlot(slot),
+              child:
+                  hasImage
+                      ? _buildImageContent(slot, image, isProcessed)
+                      : _buildEmptySlot(slot),
             ),
           ),
         );
@@ -586,6 +714,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
       fit: StackFit.expand,
       children: [
         Image.file(image, fit: BoxFit.cover),
+
+        // Status badge
         Positioned(
           top: 8,
           left: 8,
@@ -605,7 +735,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  isProcessed ? 'Processed' : 'Processing',
+                  isProcessed ? 'AI Ready' : 'Processing',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -616,6 +746,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
             ),
           ),
         ),
+
+        // Remove button
         Positioned(
           top: 8,
           right: 8,
@@ -705,32 +837,32 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
         ),
       ],
     );
   }
 
   Widget _buildCompareButton() {
-    bool canCompare = _embedding1 != null && _embedding2 != null && !_isProcessing;
+    bool canCompare =
+        _embedding1 != null && _embedding2 != null && !_isProcessing;
 
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton.icon(
         onPressed: canCompare ? _compareImages : null,
-        icon: Icon(_isProcessing ? Icons.hourglass_top : Icons.compare_arrows),
+        icon: Icon(_isProcessing ? Icons.psychology : Icons.compare_arrows),
         label: Text(
-          _isProcessing ? 'Processing...' : 'Compare Faces',
+          _isProcessing ? 'AI Processing...' : 'Compare Faces with AI',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.indigo.shade600,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: canCompare ? 2 : 0,
         ),
       ),
@@ -743,6 +875,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
     _loadingController.dispose();
     _resultController.dispose();
     _pulseController.dispose();
+    _fadeController.dispose();
+    _faceRecognitionService.dispose();
     super.dispose();
   }
 }
