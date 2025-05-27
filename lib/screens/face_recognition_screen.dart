@@ -1,15 +1,13 @@
-// lib/screens/face_recognition_screen.dart
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:in_app_face_recognition/services/face_recognition_service.dart';
+import 'package:in_app_face_recognition/widgets/comparison_widget.dart';
+import 'package:in_app_face_recognition/widgets/model_debug_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import '../services/face_recognition_service.dart';
-import '../widgets/comparison_widget.dart';
-import '../widgets/model_debug_widget.dart';
 
 class FaceRecognitionScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -107,7 +105,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       _fadeController.forward();
     } catch (e) {
-      print('Error initializing services: $e');
+      debugPrint('Error initializing services: $e');
       setState(() {
         _statusMessage = 'Initialization error: ${e.toString()}';
         _modelStatus = 'Error';
@@ -144,7 +142,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         });
       }
     } catch (e) {
-      print('Error initializing camera: $e');
+      debugPrint('Error initializing camera: $e');
       setState(() {
         _statusMessage =
             'Camera initialization failed. Using gallery mode only.';
@@ -169,7 +167,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       await _processImage(imageFile, imageSlot);
     } catch (e) {
-      print('Error capturing image: $e');
+      debugPrint('Error capturing image: $e');
       _showSnackBar('Failed to capture image: ${e.toString()}', Colors.red);
       setState(() => _isProcessing = false);
     }
@@ -214,7 +212,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
         });
       }
     } catch (e) {
-      print('Error picking image: $e');
+      debugPrint('Error picking image: $e');
       _showSnackBar('Failed to pick image: ${e.toString()}', Colors.red);
       setState(() => _isProcessing = false);
     }
@@ -256,7 +254,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       return true; // For other platforms
     } catch (e) {
-      print('Error requesting gallery permission: $e');
+      debugPrint('Error requesting gallery permission: $e');
       return false;
     }
   }
@@ -306,7 +304,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       _pulseController.forward().then((_) => _pulseController.reverse());
     } catch (e) {
-      print('Error processing image: $e');
+      debugPrint('Error processing image: $e');
       _showSnackBar('Error processing image: ${e.toString()}', Colors.red);
       setState(() {
         _isProcessing = false;
@@ -355,8 +353,8 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen>
 
       _showSnackBar(
         isMatch
-            ? '✅ Faces match! Similarity: ${(similarity * 100).toStringAsFixed(1)}%'
-            : '❌ Different faces. Similarity: ${(similarity * 100).toStringAsFixed(1)}%',
+            ? 'Faces match! Similarity: ${(similarity * 100).toStringAsFixed(1)}%'
+            : 'Different faces. Similarity: ${(similarity * 100).toStringAsFixed(1)}%',
         isMatch ? Colors.green : Colors.red,
       );
     } catch (e) {

@@ -1,6 +1,3 @@
-// lib/services/face_recognition_service.dart
-// Replace your existing file with this
-
 import 'dart:typed_data';
 
 import 'tflite_face_recognition_service.dart';
@@ -9,7 +6,7 @@ class FaceRecognitionService {
   final TFLiteFaceRecognitionService _tfliteService =
       TFLiteFaceRecognitionService();
 
-  /// Load the TensorFlow Lite models
+  /// Load the face recognition model
   Future<bool> loadModel() async {
     return await _tfliteService.loadModels();
   }

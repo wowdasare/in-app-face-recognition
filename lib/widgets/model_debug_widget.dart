@@ -1,7 +1,6 @@
-// lib/widgets/model_debug_widget.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/tflite_face_recognition_service.dart';
+import 'package:in_app_face_recognition/services/tflite_face_recognition_service.dart';
 
 class ModelDebugWidget extends StatefulWidget {
   const ModelDebugWidget({super.key});
@@ -15,7 +14,7 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
 
   bool _isLoading = false;
   String _status = 'Ready to test models';
-  List<String> _logs = [];
+  final List<String> _logs = [];
   Map<String, bool> _modelStatus = {};
 
   @override
@@ -26,9 +25,10 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
 
   void _checkInitialStatus() {
     setState(() {
-      _status = _service.isModelLoaded
-          ? 'Models are loaded: ${_service.modelStatus}'
-          : 'Models not loaded yet';
+      _status =
+          _service.isModelLoaded
+              ? 'Models are loaded: ${_service.modelStatus}'
+              : 'Models not loaded yet';
 
       _modelStatus = {
         'TensorFlow Lite': _service.isModelLoaded,
@@ -45,17 +45,17 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
     });
 
     try {
-      _addLog('🚀 Starting model loading test...');
+      _addLog('Starting model loading test...');
 
       // Check if assets exist
       await _checkAssetExistence();
 
       // Try to load models
-      _addLog('📥 Loading TensorFlow Lite models...');
+      _addLog('Loading TensorFlow Lite models...');
       bool success = await _service.loadModels();
 
       if (success) {
-        _addLog('✅ Models loaded successfully!');
+        _addLog('Models loaded successfully!');
         _addLog('📊 Model Status: ${_service.modelStatus}');
 
         setState(() {
@@ -69,14 +69,13 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
           };
         });
       } else {
-        _addLog('❌ Model loading failed');
+        _addLog('Model loading failed');
         setState(() {
           _status = 'Model loading failed';
         });
       }
-
     } catch (e) {
-      _addLog('💥 Error during testing: $e');
+      _addLog('Error during testing: $e');
       setState(() {
         _status = 'Error: $e';
       });
@@ -96,14 +95,14 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
       'assets/models/FaceAntiSpoofing.tflite',
     ];
 
-    _addLog('🔍 Checking asset existence...');
+    _addLog('Checking asset existence...');
 
     for (String path in modelPaths) {
       try {
         final ByteData data = await rootBundle.load(path);
-        _addLog('✅ Found: $path (${data.lengthInBytes} bytes)');
+        _addLog('Found: $path (${data.lengthInBytes} bytes)');
       } catch (e) {
-        _addLog('❌ Missing: $path - Error: $e');
+        _addLog('Missing: $path - Error: $e');
       }
     }
   }
@@ -112,7 +111,7 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
     setState(() {
       _logs.add('${DateTime.now().toString().substring(11, 19)}: $message');
     });
-    print(message);
+    debugPrint(message);
   }
 
   void _clearLogs() {
@@ -134,10 +133,7 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
             icon: const Icon(Icons.refresh),
             onPressed: _isLoading ? null : _testModelLoading,
           ),
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: _clearLogs,
-          ),
+          IconButton(icon: const Icon(Icons.clear), onPressed: _clearLogs),
         ],
       ),
       body: Padding(
@@ -147,7 +143,10 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
           children: [
             // Status card
             Card(
-              color: _service.isModelLoaded ? Colors.green.shade50 : Colors.orange.shade50,
+              color:
+                  _service.isModelLoaded
+                      ? Colors.green.shade50
+                      : Colors.orange.shade50,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -156,8 +155,13 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
                     Row(
                       children: [
                         Icon(
-                          _service.isModelLoaded ? Icons.check_circle : Icons.warning,
-                          color: _service.isModelLoaded ? Colors.green : Colors.orange,
+                          _service.isModelLoaded
+                              ? Icons.check_circle
+                              : Icons.warning,
+                          color:
+                              _service.isModelLoaded
+                                  ? Colors.green
+                                  : Colors.orange,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -165,7 +169,10 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: _service.isModelLoaded ? Colors.green.shade700 : Colors.orange.shade700,
+                            color:
+                                _service.isModelLoaded
+                                    ? Colors.green.shade700
+                                    : Colors.orange.shade700,
                           ),
                         ),
                       ],
@@ -209,17 +216,24 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
                   return Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: status ? Colors.green.shade100 : Colors.red.shade100,
+                      color:
+                          status ? Colors.green.shade100 : Colors.red.shade100,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: status ? Colors.green.shade300 : Colors.red.shade300,
+                        color:
+                            status
+                                ? Colors.green.shade300
+                                : Colors.red.shade300,
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           status ? Icons.check : Icons.close,
-                          color: status ? Colors.green.shade700 : Colors.red.shade700,
+                          color:
+                              status
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
@@ -229,7 +243,10 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: status ? Colors.green.shade700 : Colors.red.shade700,
+                              color:
+                                  status
+                                      ? Colors.green.shade700
+                                      : Colors.red.shade700,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -247,13 +264,14 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _isLoading ? null : _testModelLoading,
-                icon: _isLoading
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : const Icon(Icons.play_arrow),
+                icon:
+                    _isLoading
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.play_arrow),
                 label: Text(_isLoading ? 'Testing...' : 'Test Model Loading'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange.shade600,
@@ -280,31 +298,32 @@ class _ModelDebugWidgetState extends State<ModelDebugWidget> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: _logs.isEmpty
-                    ? const Center(
-                  child: Text(
-                    'No logs yet. Tap "Test Model Loading" to start.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                )
-                    : ListView.builder(
-                  itemCount: _logs.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(
-                        _logs[index],
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
+                child:
+                    _logs.isEmpty
+                        ? const Center(
+                          child: Text(
+                            'No logs yet. Tap "Test Model Loading" to start.',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount: _logs.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Text(
+                                _logs[index],
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           ],
